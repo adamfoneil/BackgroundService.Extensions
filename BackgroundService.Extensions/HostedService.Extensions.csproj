@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <PackageId>AO.HostedService.Extensions</PackageId>
+    <Title>Background Service Extensions</Title>
+    <Authors>Adam O'Neil</Authors>
+    <Description>CronJob and other background job support build on AspNetCore BackgroundService</Description>
+    <Copyright>Copyright (c) 2023 Adam O'Neil</Copyright>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
+    <PackageReference Include="Sgbj.Cron.CronTimer" Version="1.0.2" />
+  </ItemGroup>
+
+</Project>
