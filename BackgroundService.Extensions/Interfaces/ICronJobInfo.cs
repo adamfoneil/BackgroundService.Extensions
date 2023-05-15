@@ -1,4 +1,4 @@
-﻿namespace AO.HostedService.Extensions;
+﻿namespace HostedService.Extensions;
 
 public enum JobStatus
 {
@@ -8,7 +8,7 @@ public enum JobStatus
 	Failed
 }
 
-public interface IJobInfo
+public interface ICronJobInfo
 {
 	string JobName { get; set; }
 	JobStatus Status { get; set; }

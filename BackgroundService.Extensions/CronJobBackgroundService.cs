@@ -3,9 +3,9 @@ using Sgbj.Cron;
 using System.Diagnostics;
 using Microsoft.Extensions.Hosting;
 
-namespace AO.HostedService.Extensions;
+namespace HostedService.Extensions;
 
-public abstract class CronJobBackgroundService<T> : BackgroundService where T : IJobInfo, new()
+public abstract class CronJobBackgroundService<T> : BackgroundService where T : ICronJobInfo, new()
 {
 	public CronJobBackgroundService()
 	{
@@ -15,7 +15,7 @@ public abstract class CronJobBackgroundService<T> : BackgroundService where T : 
 
 	public abstract TimeZoneInfo TimeZone { get; }
 
-	public async Task ManualExecuteAsync(CancellationToken cancellationToken) => await ExecuteInnerAsync(cancellationToken, true);
+	public async Task RunManualAsync(CancellationToken cancellationToken) => await ExecuteInnerAsync(cancellationToken, true);
 
 	protected abstract Task<(JobStatus Status, string Data)> DoWorkAsync(CancellationToken stoppingToken);
 
