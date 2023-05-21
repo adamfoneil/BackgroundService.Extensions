@@ -3,15 +3,16 @@ using Cronos;
 using Dapper;
 using Microsoft.Extensions.Hosting;
 using Sgbj.Cron;
+using SimpleCrud;
 using System.Data;
 using System.Diagnostics;
 using System.Text.Json;
 
 namespace BackgroundServiceExtensions;
 
-public abstract class CronJobBackgroundService<TResult> : BackgroundService
+public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundService
 {
-    public CronJobBackgroundService()
+    public SqlServerCronJobBackgroundService()
     {
     }
 
@@ -33,8 +34,13 @@ public abstract class CronJobBackgroundService<TResult> : BackgroundService
     {
         using var cn = GetConnection();
 
-        
-
+        var update = SqlServer.Update<CronJobInfo>();
+        int count = await cn.ExecuteAsync(update, jobInfo);
+        if (count == 0)
+        {
+            var insert = SqlServer.Insert<CronJobInfo>();
+            await cn.ExecuteAsync(insert, jobInfo);
+        }
     }
 
     protected virtual string JobName => this.GetType().Name;
@@ -62,7 +68,7 @@ public abstract class CronJobBackgroundService<TResult> : BackgroundService
             JobName = JobName,
             ExecutionId = await GetNextExecutionIdAsync(),
             Status = JobStatus.Running,
-            Started = new DateTimeOffset(DateTime.UtcNow, TimeZone.BaseUtcOffset),
+            Started = LocalTime(),
             ExecutionType = executionType
         };
 
@@ -73,13 +79,13 @@ public abstract class CronJobBackgroundService<TResult> : BackgroundService
         {
             var result = await DoWorkAsync(stoppingToken, jobInfo);
             jobInfo.Status = result.Status;
-            jobInfo.Succeeded = new DateTimeOffset(DateTime.UtcNow, TimeZone.BaseUtcOffset);
+            jobInfo.Succeeded = LocalTime();
             jobInfo.ResultData = JsonSerializer.Serialize(result.Data);
         }
         catch (Exception exc)
         {
             jobInfo.Status = JobStatus.Failed;
-            jobInfo.Failed = new DateTimeOffset(DateTime.UtcNow, TimeZone.BaseUtcOffset);
+            jobInfo.Failed = LocalTime();
             jobInfo.ErrorMessage = exc.Message;
         }
         finally
@@ -89,12 +95,15 @@ public abstract class CronJobBackgroundService<TResult> : BackgroundService
             jobInfo.NextOccurence = GetNextOccurrence();
             await UpdateJobInfoAsync(jobInfo);
         }
+
+        DateTime LocalTime() => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZone);
     }
 
     private DateTime? GetNextOccurrence()
     {
         var expr = CronExpression.Parse(CrontabExpression);
-        return expr.GetNextOccurrence(DateTime.UtcNow, TimeZone);
+        var nextOccurrence = expr.GetNextOccurrence(DateTime.UtcNow, TimeZone) ?? throw new Exception("Couldn't get the next occurrence");
+        return TimeZoneInfo.ConvertTimeFromUtc(nextOccurrence, TimeZone);
     }
 
     public static string TableSql(string tableName) =>
@@ -110,7 +119,7 @@ public abstract class CronJobBackgroundService<TResult> : BackgroundService
             [Failed] datetime NULL,            
             [ResultData] nvarchar(max) NULL,    
             [ErrorMessage] nvarchar(max) NULL,
-            [Duration] time NULL,
+            [Duration] time NULL,            
             CONSTRAINT [U_CronJobInfo_JobName] UNIQUE ([JobName])
         )";
 

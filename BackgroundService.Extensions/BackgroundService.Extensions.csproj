@@ -18,6 +18,7 @@
     <RootNamespace>BackgroundServiceExtensions</RootNamespace>
 	<IncludeSymbols>true</IncludeSymbols>
 	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	<PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AO.SimpleCrud" Version="1.0.1" />
     <PackageReference Include="Dapper" Version="2.0.123" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
     <PackageReference Include="Sgbj.Cron.CronTimer" Version="1.0.2" />

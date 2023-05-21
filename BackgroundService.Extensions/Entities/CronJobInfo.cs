@@ -1,8 +1,11 @@
-﻿namespace BackgroundServiceExtensions.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace BackgroundServiceExtensions.Entities;
 
 public enum JobStatus
 {
-    Pending,
+    NotSet,
     Running,
     Succeeded,
     Failed
@@ -16,7 +19,9 @@ public enum ExecutionType
 
 public class CronJobInfo
 {
+    [NotMapped]
     public int Id { get; set; }
+    [Key]
     public string JobName { get; set; } = default!;
     /// <summary>
     /// value for correlating log detail with the latest execution of a job
@@ -27,14 +32,14 @@ public class CronJobInfo
     /// <summary>
     /// when is the next run of this job
     /// </summary>
-    public DateTimeOffset? NextOccurence { get; set; }
-    public DateTimeOffset? Started { get; set; }
-    public DateTimeOffset? Succeeded { get; set; }
+    public DateTime? NextOccurence { get; set; }
+    public DateTime? Started { get; set; }
+    public DateTime? Succeeded { get; set; }
     /// <summary>
     /// json output of the last run
     /// </summary>
     public string? ResultData { get; set; }
-    public DateTimeOffset? Failed { get; set; }
+    public DateTime? Failed { get; set; }
     public string? ErrorMessage { get; set; }
-    public TimeSpan? Duration { get; set; }
+    public TimeSpan? Duration { get; set; }    
 }

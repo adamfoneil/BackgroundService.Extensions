@@ -7,7 +7,7 @@ namespace Testing;
 [TestClass]
 public class QueueIntegration
 {
-    const string DbName = "QueueDemo";
+    public const string DbName = "QueueDemo";
 
     [TestMethod]
     public async Task SimpleQueueExample()
@@ -50,6 +50,7 @@ public class QueueIntegration
         await cn.ExecuteAsync(
             @"DROP TABLE IF EXISTS [dbo].[Queue];
 			DROP TABLE IF EXISTS [dbo].[Error];");
+
         await cn.ExecuteAsync(DemoQueueProcessor.QueueTableSql("dbo.Queue"));
         await cn.ExecuteAsync(DemoQueueProcessor.ErrorTableSql("dbo.Error"));
     }
