@@ -6,6 +6,10 @@ using Testing.Models;
 
 namespace Testing;
 
+/// <summary>
+/// a real queue processor class would probably have a TData more sophisticated than just strings.
+/// This is a minimal implementation for emitting simple messages only.
+/// </summary>
 public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem, string>
 {
     private readonly string _connectionString;
@@ -19,6 +23,10 @@ public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem, str
 
     protected override string ErrorTableName => "[dbo].[Error]";
 
+    /// <summary>
+    /// you likely would not have a property like this in a real app.
+    /// This is just for triggering internal error logging behavior
+    /// </summary>
     public bool SimulateError { get; set; }
 
     protected override IDbConnection GetConnection() => new SqlConnection(_connectionString);

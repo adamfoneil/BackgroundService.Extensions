@@ -21,6 +21,8 @@ public class QueueIntegration
         var id = await queue.EnqueueAsync("test", "hello");
         Assert.IsTrue(id != 0);
 
+        // in a real app, the Dequeue would be called by the background service infrastructure, not your code.
+        // This is just to prove that the SQL works for popping queue messages, parsing the json, and calling your worker method
         await queue.DequeueAsync(new CancellationToken());
     }
 
@@ -33,6 +35,8 @@ public class QueueIntegration
 
         var queue = new DemoQueueProcessor(LocalDb.GetConnectionString(DbName))
         {
+            // in a real app, you would never need to "simulate errors" (probably), so don't 
+            // follow this example in your app. This is merely to trigger the error internal error logging behavior
             SimulateError = true
         };
 
