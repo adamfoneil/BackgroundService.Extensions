@@ -1,5 +1,4 @@
 ﻿using BackgroundServiceExtensions;
-using Dapper;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Diagnostics;
@@ -34,14 +33,5 @@ public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem, str
         }
 
         throw new Exception("Just testing the error behavior");
-    }
-
-    protected override async Task<long> EnqueueInternalAsync(QueueItem message)
-    {
-        using var cn = GetConnection();
-        return await cn.QuerySingleAsync<long>(
-            @"INSERT INTO [dbo].[Queue] ([Queued], [Type], [UserName], [Data]) VALUES (getdate(), @type, @userName, @data);
-            SELECT SCOPE_IDENTITY()",
-            message);
     }
 }

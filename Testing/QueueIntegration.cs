@@ -18,7 +18,8 @@ public class QueueIntegration
 
         var queue = new DemoQueueProcessor(LocalDb.GetConnectionString(DbName));
 
-		await queue.EnqueueAsync("test", "hello");
+		var id = await queue.EnqueueAsync("test", "hello");
+		Assert.IsTrue(id != 0);
 
         await queue.DequeueAsync(new CancellationToken());
     }
@@ -44,16 +45,8 @@ public class QueueIntegration
 	{
 		await cn.ExecuteAsync(
 			@"DROP TABLE IF EXISTS [dbo].[Queue];
-			DROP TABLE IF EXISTS [dbo].[Error];
-
-			CREATE TABLE [dbo].[Queue] (
-				[Id] bigint identity(1,1) PRIMARY KEY,
-				[UserName] nvarchar(50) NOT NULL,
-				[Queued] datetime NOT NULL,
-				[Type] nvarchar(50) NOT NULL,
-				[Data] nvarchar(max) NOT NULL
-			);");
-
+			DROP TABLE IF EXISTS [dbo].[Error];");
+		await cn.ExecuteAsync(DemoQueueProcessor.QueueTableSql("dbo.Queue"));
 		await cn.ExecuteAsync(DemoQueueProcessor.ErrorTableSql("dbo.Error"));
 	}
 }

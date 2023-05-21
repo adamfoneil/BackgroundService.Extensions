@@ -19,22 +19,29 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
 
 	protected abstract Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, TMessage message, TData? data);
 
-	protected abstract Task<long> EnqueueInternalAsync(TMessage message);
-
 	public async Task<long> EnqueueAsync(string userName, TData data)
 	{
         ArgumentNullException.ThrowIfNull(userName, nameof(userName));
         ArgumentNullException.ThrowIfNull(data, nameof(data));
-		
+
 		var message = new TMessage();
 		message.UserName = userName;
 		message.Queued = DateTime.UtcNow;
 		message.Data = JsonSerializer.Serialize(data);
 		message.Type = typeof(TData).Name;
-		return await EnqueueInternalAsync(message);
-	}
 
-	public async Task DequeueAsync(CancellationToken stoppingToken)
+        using var cn = GetConnection();
+        return await cn.QuerySingleAsync<long>(
+            $@"INSERT INTO {QueueTableName} ([Queued], [Type], [UserName], [Data]) VALUES (getdate(), @type, @userName, @data);
+            SELECT SCOPE_IDENTITY()",
+            message);
+    }
+
+	/// <summary>
+	/// normally you would not call this yourself, but rather let it be called by the background service.
+	/// This is public for testing purposes only.
+	/// </summary>
+    public async Task DequeueAsync(CancellationToken stoppingToken)
 	{
 		using var cn = GetConnection();
 
@@ -56,10 +63,19 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
 		}
 	}
 
+	public static string QueueTableSql(string tableName) =>
+		$@"CREATE TABLE {tableName} (
+			[Id] bigint identity(1,1) PRIMARY KEY,
+			[UserName] nvarchar(50) NOT NULL,
+			[Queued] datetime NOT NULL,
+			[Type] nvarchar(50) NOT NULL,
+			[Data] nvarchar(max) NOT NULL
+		);";
+
 	public static string ErrorTableSql(string tableName) => 
 		$@"CREATE TABLE {tableName} (
-			[Id] int identity(1,1) PRIMARY KEY,
-			[Timestamp] datetime NOT NULL DEFAULT (getdate()),
+			[Id] bigint identity(1,1) PRIMARY KEY,
+			[Timestamp] datetime NOT NULL DEFAULT (getdate()),			
 			[ErrorMessage] nvarchar(max) NOT NULL,
 			[QueueMessage] nvarchar(max) NOT NULL,
 			[Data] nvarchar(max) NOT NULL
