@@ -16,6 +16,8 @@
     <RepositoryUrl>https://github.com/adamfoneil/BackgroundService.Extensions</RepositoryUrl>
     <PackageTags>cronjobs; background jobs; queue service</PackageTags>
     <RootNamespace>BackgroundServiceExtensions</RootNamespace>
+	<IncludeSymbols>true</IncludeSymbols>
+	<SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
 
   <ItemGroup>
