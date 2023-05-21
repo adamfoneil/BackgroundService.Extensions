@@ -4,7 +4,7 @@ For completeness' sake I should mention that you can also use Azure functions to
 
 So, this library extends the [BackgroundService](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/host/hosted-services?view=aspnetcore-7.0&tabs=visual-studio#backgroundservice-base-class) class with:
 
-- [CronJobBackgroundService](https://github.com/adamfoneil/BackgroundService.Extensions/blob/master/BackgroundService.Extensions/CronJobBackgroundService.cs), based on [sgbj/crontimer](https://github.com/sgbj/crontimer).
+- [SqlServerCronJobBackgroundService](https://github.com/adamfoneil/BackgroundService.Extensions/blob/master/BackgroundService.Extensions/SqlServerCronJobBackgroundService.cs), based on [sgbj/crontimer](https://github.com/sgbj/crontimer).
 - [SqlServerQueueBackgroundService](https://github.com/adamfoneil/BackgroundService.Extensions/blob/master/BackgroundService.Extensions/SqlServerQueueBackgroundService.cs), which had critical help from this blog [Using tables as queues](http://rusanu.com/2010/03/26/using-tables-as-queues/).
 
 Please see the [Queue integration tests](https://github.com/adamfoneil/BackgroundService.Extensions/blob/master/Testing/QueueIntegration.cs) to see a simple usage in effect.
