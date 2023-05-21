@@ -1,12 +1,15 @@
-﻿using Cronos;
+﻿using BackgroundServiceExtensions.Entities;
+using Cronos;
+using Dapper;
 using Microsoft.Extensions.Hosting;
 using Sgbj.Cron;
+using System.Data;
 using System.Diagnostics;
 using System.Text.Json;
 
 namespace BackgroundServiceExtensions;
 
-public abstract class CronJobBackgroundService<TJobInfo, TResultData> : BackgroundService where TJobInfo : ICronJobInfo, new()
+public abstract class CronJobBackgroundService<TResult> : BackgroundService
 {
     public CronJobBackgroundService()
     {
@@ -14,17 +17,33 @@ public abstract class CronJobBackgroundService<TJobInfo, TResultData> : Backgrou
 
     public abstract string CrontabExpression { get; }
 
+    protected abstract IDbConnection GetConnection();
+    
+    protected abstract string TableName { get; }
+
+    protected virtual string SequenceName => "[dbo].[seq_CronJobExecution]";
+
     public abstract TimeZoneInfo TimeZone { get; }
 
-    public async Task RunManualAsync(CancellationToken cancellationToken) => await ExecuteInnerAsync(cancellationToken, true);
+    public async Task RunManualAsync(CancellationToken cancellationToken) => await ExecuteInnerAsync(cancellationToken, ExecutionType.Manual);
 
-    protected abstract Task<(JobStatus Status, TResultData Data)> DoWorkAsync(CancellationToken stoppingToken, ICronJobInfo jobInfo);
+    protected abstract Task<(JobStatus Status, TResult Data)> DoWorkAsync(CancellationToken stoppingToken, CronJobInfo jobInfo);
 
-    protected abstract Task UpdateJobInfoAsync(TJobInfo jobInfo);
+    protected async Task UpdateJobInfoAsync(CronJobInfo jobInfo)
+    {
+        using var cn = GetConnection();
+
+        
+
+    }
 
     protected virtual string JobName => this.GetType().Name;
 
-    protected abstract Task<int> GetNextExecutionIdAsync();
+    protected async Task<int> GetNextExecutionIdAsync()
+    {
+        using var cn = GetConnection();
+        return await cn.QuerySingleAsync<int>($"SELECT NEXT VALUE FOR {SequenceName}");
+    }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -32,19 +51,19 @@ public abstract class CronJobBackgroundService<TJobInfo, TResultData> : Backgrou
 
         while (await timer.WaitForNextTickAsync(stoppingToken))
         {
-            await ExecuteInnerAsync(stoppingToken, false);
+            await ExecuteInnerAsync(stoppingToken, ExecutionType.Scheduled);
         }
     }
 
-    private async Task ExecuteInnerAsync(CancellationToken stoppingToken, bool runningManually)
+    private async Task ExecuteInnerAsync(CancellationToken stoppingToken, ExecutionType executionType)
     {
-        var jobInfo = new TJobInfo()
+        var jobInfo = new CronJobInfo()
         {
             JobName = JobName,
             ExecutionId = await GetNextExecutionIdAsync(),
             Status = JobStatus.Running,
             Started = new DateTimeOffset(DateTime.UtcNow, TimeZone.BaseUtcOffset),
-            RunManually = runningManually
+            ExecutionType = executionType
         };
 
         await UpdateJobInfoAsync(jobInfo);
@@ -53,7 +72,7 @@ public abstract class CronJobBackgroundService<TJobInfo, TResultData> : Backgrou
         try
         {
             var result = await DoWorkAsync(stoppingToken, jobInfo);
-            jobInfo.Status = JobStatus.Succeeded;
+            jobInfo.Status = result.Status;
             jobInfo.Succeeded = new DateTimeOffset(DateTime.UtcNow, TimeZone.BaseUtcOffset);
             jobInfo.ResultData = JsonSerializer.Serialize(result.Data);
         }
@@ -77,4 +96,24 @@ public abstract class CronJobBackgroundService<TJobInfo, TResultData> : Backgrou
         var expr = CronExpression.Parse(CrontabExpression);
         return expr.GetNextOccurrence(DateTime.UtcNow, TimeZone);
     }
+
+    public static string TableSql(string tableName) =>
+        $@"CREATE TABLE {tableName} (
+            [Id] int identity(1,1) PRIMARY KEY,
+            [JobName] nvarchar(100) NOT NULL,
+            [ExecutionId] int NOT NULL,
+            [Status] int NOT NULL,
+            [ExecutionType] int NOT NULL,
+            [NextOccurence] datetime NULL,
+            [Started] datetime NULL,
+            [Succeeded] datetime NULL,
+            [Failed] datetime NULL,            
+            [ResultData] nvarchar(max) NULL,    
+            [ErrorMessage] nvarchar(max) NULL,
+            [Duration] time NULL,
+            CONSTRAINT [U_CronJobInfo_JobName] UNIQUE ([JobName])
+        )";
+
+    public static string SequenceSql(string sequenceName) =>
+        $"CREATE SEQUENCE {sequenceName} START WITH 1 INCREMENT BY 1";
 }
