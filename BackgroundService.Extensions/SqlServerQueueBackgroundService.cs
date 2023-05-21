@@ -51,21 +51,33 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
 			}
 			catch (Exception exc)
 			{
-				await LogErrorAsync(exc, message);
+				await LogErrorAsync(exc, message, data);
 			}
 		}
 	}
 
-	private async Task LogErrorAsync(Exception exception, TMessage item)
+	public static string ErrorTableSql(string tableName) => 
+		$@"CREATE TABLE {tableName} (
+			[Id] int identity(1,1) PRIMARY KEY,
+			[Timestamp] datetime NOT NULL DEFAULT (getdate()),
+			[ErrorMessage] nvarchar(max) NOT NULL,
+			[QueueMessage] nvarchar(max) NOT NULL,
+			[Data] nvarchar(max) NOT NULL
+		);";
+
+    private async Task LogErrorAsync(Exception exception, TMessage item, TData? data)
 	{
 		using var cn = GetConnection();
 
+		item.Data = string.Empty; // because it will be redundant to the Data value
+
 		try
 		{
-			await cn.ExecuteAsync($"INSERT INTO {ErrorTableName} ([Message], [Data]) VALUES (@message, @data)", new
+			await cn.ExecuteAsync($"INSERT INTO {ErrorTableName} ([ErrorMessage], [QueueMessage], [Data]) VALUES (@errorMessage, @queueMessage, @data)", new
 			{
-				message = exception.Message,
-				data = JsonSerializer.Serialize(item)
+				errorMessage = exception.Message,
+				queueMessage = JsonSerializer.Serialize(item),
+				data = JsonSerializer.Serialize(data)
 			});
 		}
 		catch (Exception exc)

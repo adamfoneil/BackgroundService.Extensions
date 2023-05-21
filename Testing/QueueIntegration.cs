@@ -52,13 +52,8 @@ public class QueueIntegration
 				[Queued] datetime NOT NULL,
 				[Type] nvarchar(50) NOT NULL,
 				[Data] nvarchar(max) NOT NULL
-			);
-
-			CREATE TABLE [dbo].[Error] (
-				[Id] int identity(1,1) PRIMARY KEY,
-				[Timestamp] datetime NOT NULL DEFAULT (getdate()),
-				[Message] nvarchar(max) NOT NULL,
-				[Data] nvarchar(max) NOT NULL
 			);");
+
+		await cn.ExecuteAsync(DemoQueueProcessor.ErrorTableSql("dbo.Error"));
 	}
 }
