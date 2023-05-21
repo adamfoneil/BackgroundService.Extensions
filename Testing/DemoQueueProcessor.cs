@@ -1,4 +1,5 @@
-﻿using HostedService.Extensions;
+﻿using BackgroundServiceExtensions;
+using Dapper;
 using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Diagnostics;
@@ -6,7 +7,7 @@ using Testing.Models;
 
 namespace Testing;
 
-public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem>
+public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem, string>
 {
 	private readonly string _connectionString;
 
@@ -19,20 +20,28 @@ public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem>
 
 	protected override string ErrorTableName => "[dbo].[Error]";
 
-	public bool Throw { get; set; }
-
-	protected override async Task DoWorkAsync(CancellationToken stoppingToken, QueueItem item)
-	{		
-		if (!Throw)
-		{
-			Debug.Print($"item Id {item.Id} received on {item.Timestamp}: {item.Message}");
-			await Task.CompletedTask;
-			return;
-		}
-
-		throw new Exception("Just testing the error behavior");
-	}
+	public bool SimulateError { get; set; }    
 
 	protected override IDbConnection GetConnection() => new SqlConnection(_connectionString);
-	
+
+    protected override async Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, QueueItem message, string data)
+    {
+        if (!SimulateError)
+        {
+            Debug.Print($"item Id {message.Id} received on {message.Queued}: {message.Data}");
+            await Task.CompletedTask;
+            return;
+        }
+
+        throw new Exception("Just testing the error behavior");
+    }
+
+    protected override async Task<long> EnqueueInternalAsync(QueueItem message)
+    {
+        using var cn = GetConnection();
+        return await cn.QuerySingleAsync<long>(
+            @"INSERT INTO [dbo].[Queue] ([Queued], [UserName], [Data]) VALUES (getdate(), @userName, @data);
+            SELECT SCOPE_IDENTITY()",
+            message);
+    }
 }

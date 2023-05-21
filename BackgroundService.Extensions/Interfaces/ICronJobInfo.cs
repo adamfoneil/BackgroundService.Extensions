@@ -1,4 +1,4 @@
-﻿namespace HostedService.Extensions;
+﻿namespace BackgroundServiceExtensions;
 
 public enum JobStatus
 {

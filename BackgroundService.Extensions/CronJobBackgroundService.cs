@@ -4,7 +4,7 @@ using Sgbj.Cron;
 using System.Diagnostics;
 using System.Text.Json;
 
-namespace HostedService.Extensions;
+namespace BackgroundServiceExtensions;
 
 public abstract class CronJobBackgroundService<TJobInfo, TResultData> : BackgroundService where TJobInfo : ICronJobInfo, new()
 {

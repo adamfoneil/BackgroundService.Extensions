@@ -1,8 +1,11 @@
-﻿namespace Testing.Models;
+﻿using BackgroundServiceExtensions.Interfaces;
 
-public class QueueItem
+namespace Testing.Models;
+
+public class QueueItem : IQueueMessage
 {
-	public int Id { get; set; }
-	public DateTime Timestamp { get; set; }
-	public string Message { get; set; } = default!;
+	public long Id { get; set; }
+    public DateTime Queued { get; set; }
+    public string UserName { get; set; } = default!;
+    public string Data { get; set; } = default!;        
 }
