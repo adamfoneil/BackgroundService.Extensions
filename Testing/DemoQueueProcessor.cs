@@ -24,11 +24,11 @@ public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem, str
 
 	protected override IDbConnection GetConnection() => new SqlConnection(_connectionString);
 
-    protected override async Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, QueueItem message, string data)
+    protected override async Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, QueueItem message, string? data)
     {
         if (!SimulateError)
         {
-            Debug.Print($"item Id {message.Id} received on {message.Queued}: {message.Data}");
+            Debug.Print($"item Id {message.Id} received on {message.Queued}: {data}");
             await Task.CompletedTask;
             return;
         }
@@ -40,7 +40,7 @@ public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem, str
     {
         using var cn = GetConnection();
         return await cn.QuerySingleAsync<long>(
-            @"INSERT INTO [dbo].[Queue] ([Queued], [UserName], [Data]) VALUES (getdate(), @userName, @data);
+            @"INSERT INTO [dbo].[Queue] ([Queued], [Type], [UserName], [Data]) VALUES (getdate(), @type, @userName, @data);
             SELECT SCOPE_IDENTITY()",
             message);
     }

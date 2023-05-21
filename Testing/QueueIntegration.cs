@@ -50,6 +50,7 @@ public class QueueIntegration
 				[Id] bigint identity(1,1) PRIMARY KEY,
 				[UserName] nvarchar(50) NOT NULL,
 				[Queued] datetime NOT NULL,
+				[Type] nvarchar(50) NOT NULL,
 				[Data] nvarchar(max) NOT NULL
 			);
 

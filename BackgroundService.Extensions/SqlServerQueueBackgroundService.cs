@@ -17,7 +17,7 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
 
 	protected abstract string ErrorTableName { get; }
 
-	protected abstract Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, TMessage message, TData data);
+	protected abstract Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, TMessage message, TData? data);
 
 	protected abstract Task<long> EnqueueInternalAsync(TMessage message);
 
@@ -30,6 +30,7 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
 		message.UserName = userName;
 		message.Queued = DateTime.UtcNow;
 		message.Data = JsonSerializer.Serialize(data);
+		message.Type = typeof(TData).Name;
 		return await EnqueueInternalAsync(message);
 	}
 
@@ -37,14 +38,16 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
 	{
 		using var cn = GetConnection();
 
-		TMessage message = await cn.QuerySingleOrDefaultAsync<TMessage>($"DELETE TOP (1) FROM {QueueTableName} WITH (ROWLOCK, READPAST) OUTPUT [deleted].*");
+		TMessage message = await cn.QuerySingleOrDefaultAsync<TMessage>(
+			$"DELETE TOP (1) FROM {QueueTableName} WITH (ROWLOCK, READPAST) OUTPUT [deleted].* WHERE [Type]=@type",
+			new { type = typeof(TData).Name });
 
 		if (message is not null)
 		{			
 			var data = JsonSerializer.Deserialize<TData>(message.Data);
 			try
 			{
-				await DoWorkAsync(stoppingToken, DateTime.UtcNow, message, data!);
+				await DoWorkAsync(stoppingToken, DateTime.UtcNow, message, data);
 			}
 			catch (Exception exc)
 			{
