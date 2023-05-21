@@ -8,20 +8,20 @@ namespace Testing;
 
 public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem, string>
 {
-	private readonly string _connectionString;
+    private readonly string _connectionString;
 
     public DemoQueueProcessor(string connectionString)
-    {        
-		_connectionString = connectionString;
+    {
+        _connectionString = connectionString;
     }
 
     protected override string QueueTableName => "[dbo].[Queue]";
 
-	protected override string ErrorTableName => "[dbo].[Error]";
+    protected override string ErrorTableName => "[dbo].[Error]";
 
-	public bool SimulateError { get; set; }    
+    public bool SimulateError { get; set; }
 
-	protected override IDbConnection GetConnection() => new SqlConnection(_connectionString);
+    protected override IDbConnection GetConnection() => new SqlConnection(_connectionString);
 
     protected override async Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, QueueItem message, string? data)
     {
