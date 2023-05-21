@@ -18,7 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\BackgroundService.Extensions\HostedService.Extensions.csproj" />
+    <ProjectReference Include="..\BackgroundService.Extensions\BackgroundService.Extensions.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,11 +1,12 @@
 ﻿using Cronos;
+using Microsoft.Extensions.Hosting;
 using Sgbj.Cron;
 using System.Diagnostics;
-using Microsoft.Extensions.Hosting;
+using System.Text.Json;
 
 namespace HostedService.Extensions;
 
-public abstract class CronJobBackgroundService<T> : BackgroundService where T : ICronJobInfo, new()
+public abstract class CronJobBackgroundService<TJobInfo, TResultData> : BackgroundService where TJobInfo : ICronJobInfo, new()
 {
 	public CronJobBackgroundService()
 	{
@@ -17,9 +18,13 @@ public abstract class CronJobBackgroundService<T> : BackgroundService where T : 
 
 	public async Task RunManualAsync(CancellationToken cancellationToken) => await ExecuteInnerAsync(cancellationToken, true);
 
-	protected abstract Task<(JobStatus Status, string Data)> DoWorkAsync(CancellationToken stoppingToken);
+	protected abstract Task<(JobStatus Status, TResultData Data)> DoWorkAsync(CancellationToken stoppingToken, ICronJobInfo jobInfo);
 
-	protected abstract Task UpdateJobInfoAsync(T jobInfo);
+	protected abstract Task UpdateJobInfoAsync(TJobInfo jobInfo);
+
+	protected virtual string JobName => this.GetType().Name;
+
+	protected abstract Task<int> GetNextExecutionIdAsync();
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
@@ -29,15 +34,14 @@ public abstract class CronJobBackgroundService<T> : BackgroundService where T : 
 		{
 			await ExecuteInnerAsync(stoppingToken, false);
 		}
-	}
-
-	protected virtual async Task LogInfoAsync(string level, string message, string detail) => await Task.CompletedTask;
+	}	
 
 	private async Task ExecuteInnerAsync(CancellationToken stoppingToken, bool runningManually)
 	{
-		var jobInfo = new T() 
+		var jobInfo = new TJobInfo() 
 		{ 
-			JobName = this.GetType().Name, 
+			JobName = JobName,
+			ExecutionId = await GetNextExecutionIdAsync(),
 			Status = JobStatus.Running,
 			Started = new DateTimeOffset(DateTime.UtcNow, TimeZone.BaseUtcOffset),			
 			RunManually = runningManually
@@ -47,11 +51,11 @@ public abstract class CronJobBackgroundService<T> : BackgroundService where T : 
 
 		var sw = Stopwatch.StartNew();
 		try
-		{								
-			var result = await DoWorkAsync(stoppingToken);						
+		{
+			var result = await DoWorkAsync(stoppingToken, jobInfo);						
 			jobInfo.Status = JobStatus.Succeeded;
 			jobInfo.Succeeded = new DateTimeOffset(DateTime.UtcNow, TimeZone.BaseUtcOffset);
-			jobInfo.ResultData = result.Data;			
+			jobInfo.ResultData = JsonSerializer.Serialize(result.Data);
 		}
 		catch (Exception exc)
 		{
