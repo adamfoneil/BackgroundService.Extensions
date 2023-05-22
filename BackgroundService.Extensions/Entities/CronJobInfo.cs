@@ -8,7 +8,8 @@ public enum JobStatus
     NotSet,
     Running,
     Succeeded,
-    Failed
+    Failed,
+    Exception
 }
 
 public enum ExecutionType

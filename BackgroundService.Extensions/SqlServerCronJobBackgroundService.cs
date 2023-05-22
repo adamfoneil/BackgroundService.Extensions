@@ -84,7 +84,7 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
         }
         catch (Exception exc)
         {
-            jobInfo.Status = JobStatus.Failed;
+            jobInfo.Status = JobStatus.Exception;
             jobInfo.Failed = LocalTime();
             jobInfo.ErrorMessage = exc.Message;
         }
