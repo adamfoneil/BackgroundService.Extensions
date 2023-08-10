@@ -34,11 +34,11 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
     {
         using var cn = GetConnection();
 
-        var update = SqlServer.Update<CronJobInfo>();
+        var update = SqlServer.Update<CronJobInfo>(TableName);
         int count = await cn.ExecuteAsync(update, jobInfo);
         if (count == 0)
         {
-            var insert = SqlServer.Insert<CronJobInfo>();
+            var insert = SqlServer.Insert<CronJobInfo>(TableName);
             await cn.ExecuteAsync(insert, jobInfo);
         }
     }

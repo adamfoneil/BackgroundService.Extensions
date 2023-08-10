@@ -10,7 +10,7 @@
     <Authors>Adam O'Neil</Authors>
     <Description>CronJob and SqlServer queue support build on AspNetCore BackgroundService</Description>
     <Copyright>Copyright (c) 2023 Adam O'Neil</Copyright>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <PackageProjectUrl>https://github.com/adamfoneil/BackgroundService.Extensions</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/adamfoneil/BackgroundService.Extensions</RepositoryUrl>
@@ -29,7 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="AO.SimpleCrud" Version="1.0.1" />
+    <PackageReference Include="AO.SimpleCrud" Version="1.0.2" />
     <PackageReference Include="Dapper" Version="2.0.123" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="6.0.0" />
     <PackageReference Include="Sgbj.Cron.CronTimer" Version="1.0.2" />
