@@ -16,11 +16,15 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
     {
     }
 
+    private CronJobInfo _currentJob = new();
+
     public abstract string CrontabExpression { get; }
 
     protected abstract IDbConnection GetConnection();
     
     protected abstract string TableName { get; }
+
+    protected abstract string LogTableName { get; }
 
     protected virtual string SequenceName => "[dbo].[seq_CronJobExecution]";
 
@@ -59,11 +63,30 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
         {
             await ExecuteInnerAsync(stoppingToken, ExecutionType.Scheduled);
         }
+    }    
+
+    protected async Task LogInfoAsync(string message) => await LogAsync(MessageType.Info, message);
+
+    protected async Task LogErrorAsync(Exception exception) => await LogAsync(MessageType.Error, exception.Message);
+
+    private async Task LogAsync(MessageType messageType, string message)
+    {
+        var logMessage = new CronJobLogMessage()
+        {
+            JobName = _currentJob.JobName,
+            ExecutionId = _currentJob.ExecutionId,
+            MessageType = messageType,
+            Message = message
+        };
+
+        var sql = SqlServer.Insert<CronJobLogMessage>(LogTableName);
+        using var cn = GetConnection();        
+        await cn.ExecuteAsync(sql, message);
     }
 
     private async Task ExecuteInnerAsync(CancellationToken stoppingToken, ExecutionType executionType)
     {
-        var jobInfo = new CronJobInfo()
+        _currentJob = new CronJobInfo()
         {
             JobName = JobName,
             ExecutionId = await GetNextExecutionIdAsync(),
@@ -72,28 +95,28 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
             ExecutionType = executionType
         };
 
-        await UpdateJobInfoAsync(jobInfo);
+        await UpdateJobInfoAsync(_currentJob);
 
         var sw = Stopwatch.StartNew();
         try
         {
-            var result = await DoWorkAsync(stoppingToken, jobInfo);
-            jobInfo.Status = result.Status;
-            jobInfo.Succeeded = LocalTime();
-            jobInfo.ResultData = JsonSerializer.Serialize(result.Data);
+            var result = await DoWorkAsync(stoppingToken, _currentJob);
+            _currentJob.Status = result.Status;
+            _currentJob.Succeeded = LocalTime();
+            _currentJob.ResultData = JsonSerializer.Serialize(result.Data);
         }
         catch (Exception exc)
         {
-            jobInfo.Status = JobStatus.Exception;
-            jobInfo.Failed = LocalTime();
-            jobInfo.ErrorMessage = exc.Message;
+            _currentJob.Status = JobStatus.Exception;
+            _currentJob.Failed = LocalTime();
+            _currentJob.ErrorMessage = exc.Message;
         }
         finally
         {
             sw.Stop();
-            jobInfo.Duration = TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds);
-            jobInfo.NextOccurence = GetNextOccurrence();
-            await UpdateJobInfoAsync(jobInfo);
+            _currentJob.Duration = TimeSpan.FromMilliseconds(sw.ElapsedMilliseconds);
+            _currentJob.NextOccurence = GetNextOccurrence();
+            await UpdateJobInfoAsync(_currentJob);
         }
 
         DateTime LocalTime() => TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, TimeZone);
@@ -125,4 +148,15 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
 
     public static string SequenceSql(string sequenceName) =>
         $"CREATE SEQUENCE {sequenceName} START WITH 1 INCREMENT BY 1";
+
+    public static string LogTableSql(string tableName) =>
+        $@"CREATE TABLE {tableName} (
+            [Id] bigint identity(1,1) PRIAMRY KEY,
+            [JobName] nvarchar(100) NOT NULL,
+            [ExecutionId] int NOT NULL,
+            [Timestamp] datetime NOT NULL,
+            [MessageType] int NOT NULL,
+            [Message] nvarchar(max) NOT NULL,
+            [Data] nvarchar(max) NULL
+        )";
 }

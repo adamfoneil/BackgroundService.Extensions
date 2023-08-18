@@ -75,7 +75,7 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
     public static string ErrorTableSql(string tableName) =>
         $@"CREATE TABLE {tableName} (
 			[Id] bigint identity(1,1) PRIMARY KEY,
-			[Timestamp] datetime NOT NULL DEFAULT (getdate()),			
+			[Timestamp] datetime NOT NULL DEFAULT (getdate()),
 			[ErrorMessage] nvarchar(max) NOT NULL,
 			[QueueMessage] nvarchar(max) NOT NULL,
 			[Data] nvarchar(max) NOT NULL
