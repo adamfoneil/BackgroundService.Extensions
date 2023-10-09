@@ -1,4 +1,5 @@
-﻿using BackgroundServiceExtensions.Interfaces;
+﻿using BackgroundServiceExtensions.Extensions;
+using BackgroundServiceExtensions.Interfaces;
 using Dapper;
 using Microsoft.Extensions.Hosting;
 using System.Data;
@@ -45,20 +46,18 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
     {
         using var cn = GetConnection();
 
-        TMessage message = await cn.QuerySingleOrDefaultAsync<TMessage>(
-            $"DELETE TOP (1) FROM {QueueTableName} WITH (ROWLOCK, READPAST) OUTPUT [deleted].* WHERE [Type]=@type",
-            new { type = typeof(TData).Name });
+        var result = await cn.DequeueAsync<TMessage>(QueueTableName, "[Type]=@type", new { type = typeof(TData).Name });
 
-        if (message is not null)
+        if (result.Success)
         {
-            var data = JsonSerializer.Deserialize<TData>(message.Data);
+            var data = JsonSerializer.Deserialize<TData>(result.Message.Data);
             try
             {
-                await DoWorkAsync(stoppingToken, DateTime.UtcNow, message, data);
+                await DoWorkAsync(stoppingToken, DateTime.UtcNow, result.Message, data);
             }
             catch (Exception exc)
             {
-                await LogErrorAsync(exc, message, data);
+                await LogErrorAsync(exc, result.Message, data);
             }
         }
     }
