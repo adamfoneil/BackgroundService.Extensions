@@ -21,13 +21,13 @@ public static class DbConnectionExtensions
     /// <summary>
     /// dequeue all TMessages from a table, doing some work on each TMessage
     /// </summary>    
-    public static async Task ProcessQueueAsync<TMessage>(this IDbConnection connection, string tableName, Func<TMessage, Task> task, string? crtieria = null, object? parameters = null)
+    public static async Task ProcessQueueAsync<TMessage>(this IDbConnection connection, string tableName, Func<TMessage, Task> task, CancellationToken cancellationToken, string? crtieria = null, object? parameters = null)
     {        
-        do
+        while (!cancellationToken.IsCancellationRequested)
         {
             var result = await DequeueAsync<TMessage>(connection, tableName, crtieria, parameters);
             if (!result.Success) break;
             await task.Invoke(result.Message);
-        } while (true);
+        }
     }
 }
