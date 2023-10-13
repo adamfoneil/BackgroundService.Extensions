@@ -16,6 +16,8 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
 	{
 	}
 
+	public bool Enabled { get; set; } = true;
+
 	public abstract string CrontabExpression { get; }
 
 	protected abstract IDbConnection GetConnection();
@@ -53,6 +55,8 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
 
 	protected override async Task ExecuteAsync(CancellationToken stoppingToken)
 	{
+		if (!Enabled) return;
+
 		using var timer = new CronTimer(CrontabExpression, TimeZone);
 
 		while (await timer.WaitForNextTickAsync(stoppingToken))
