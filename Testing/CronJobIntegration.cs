@@ -1,5 +1,6 @@
 ﻿using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using SqlServer.LocalDb;
 
 namespace Testing;
@@ -7,13 +8,15 @@ namespace Testing;
 [TestClass]
 public class CronJobIntegration
 {
-    [TestMethod]
+	private static ILogger<T> GetLogger<T>() => LoggerFactory.Create(config => config.AddConsole()).CreateLogger<T>();
+
+	[TestMethod]
     public async Task SimpleJob()
     {
         using var cn = LocalDb.GetConnection(QueueIntegration.DbName);
         await InitObjectsAsync(cn);
 
-        var job = new DemoCronJob(LocalDb.GetConnectionString(QueueIntegration.DbName));
+        var job = new DemoCronJob(LocalDb.GetConnectionString(QueueIntegration.DbName), GetLogger<DemoCronJob>());
         await job.RunManualAsync(new CancellationToken());
     }
 

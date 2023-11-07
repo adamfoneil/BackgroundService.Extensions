@@ -2,6 +2,7 @@
 using BackgroundServiceExtensions.Interfaces;
 using Dapper;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Text.Json;
 
@@ -12,6 +13,13 @@ namespace BackgroundServiceExtensions;
 /// </summary>
 public abstract class SqlServerQueueBackgroundService<TMessage, TData> : BackgroundService where TMessage : IQueueMessage, new() where TData : notnull
 {
+	protected readonly ILogger<SqlServerQueueBackgroundService<TMessage, TData>> Logger;
+
+	public SqlServerQueueBackgroundService(ILogger<SqlServerQueueBackgroundService<TMessage, TData>> logger)
+    {
+		Logger = logger;
+	}
+
     protected abstract IDbConnection GetConnection();
 
     protected abstract string QueueTableName { get; }
@@ -57,6 +65,7 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
             }
             catch (Exception exc)
             {
+                Logger.LogError(exc, "Error in SqlServerQueueBackgroundService.DequeueAsync");
                 await LogErrorAsync(exc, result.Message, data);
             }
         }

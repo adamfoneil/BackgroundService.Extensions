@@ -2,6 +2,7 @@
 using Cronos;
 using Dapper;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Sgbj.Cron;
 using SimpleCrud;
 using System.Data;
@@ -12,8 +13,11 @@ namespace BackgroundServiceExtensions;
 
 public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundService
 {
-	public SqlServerCronJobBackgroundService()
+	protected readonly ILogger<SqlServerCronJobBackgroundService<TResult>> Logger;
+
+	public SqlServerCronJobBackgroundService(ILogger<SqlServerCronJobBackgroundService<TResult>> logger)
 	{
+		Logger = logger;
 	}
 
 	public bool Enabled { get; set; } = true;
@@ -34,14 +38,22 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
 
 	protected async Task UpdateJobInfoAsync(CronJobInfo jobInfo)
 	{
-		using var cn = GetConnection();
-
-		var update = SqlServer.Update<CronJobInfo>(TableName);
-		int count = await cn.ExecuteAsync(update, jobInfo);
-		if (count == 0)
+		try
 		{
-			var insert = SqlServer.Insert<CronJobInfo>(TableName);
-			await cn.ExecuteAsync(insert, jobInfo);
+			using var cn = GetConnection();
+
+			var update = SqlServer.Update<CronJobInfo>(TableName);
+			int count = await cn.ExecuteAsync(update, jobInfo);
+			if (count == 0)
+			{
+				var insert = SqlServer.Insert<CronJobInfo>(TableName);
+				await cn.ExecuteAsync(insert, jobInfo);
+			}
+		}
+		catch (Exception exc)
+		{
+			Logger.LogError(exc, "Error in SqlServerCronJobBackgroundService.UpdateJobInfoAsync");
+			throw;
 		}
 	}
 
@@ -88,6 +100,7 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
 		}
 		catch (Exception exc)
 		{
+			Logger.LogError(exc, "Error in SqlServerCronJobBackgroundService.ExecuteInnerAsync");
 			jobInfo.Status = JobStatus.Exception;
 			jobInfo.Failed = LocalTime();
 			jobInfo.ErrorMessage = exc.Message;

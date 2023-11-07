@@ -1,5 +1,6 @@
 using Dapper;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using SqlServer.LocalDb;
 
 namespace Testing;
@@ -9,6 +10,8 @@ public class QueueIntegration
 {
     public const string DbName = "QueueDemo";
 
+    private static ILogger<T> GetLogger<T>() => LoggerFactory.Create(config => config.AddConsole()).CreateLogger<T>();
+
     [TestMethod]
     public async Task SimpleQueueExample()
     {
@@ -16,7 +19,7 @@ public class QueueIntegration
 
         await InitObjectsAsync(cn);
 
-        var queue = new DemoQueueProcessor(LocalDb.GetConnectionString(DbName));
+        var queue = new DemoQueueProcessor(LocalDb.GetConnectionString(DbName), GetLogger<DemoQueueProcessor>());
 
         var id = await queue.EnqueueAsync("test", "hello");
         Assert.IsTrue(id != 0);
@@ -33,7 +36,7 @@ public class QueueIntegration
 
         await InitObjectsAsync(cn);
 
-        var queue = new DemoQueueProcessor(LocalDb.GetConnectionString(DbName))
+        var queue = new DemoQueueProcessor(LocalDb.GetConnectionString(DbName), GetLogger<DemoQueueProcessor>())
         {
             // in a real app, you would never need to "simulate errors" (probably), so don't 
             // follow this example in your app. This is merely to trigger the error internal error logging behavior

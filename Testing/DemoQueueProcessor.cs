@@ -1,5 +1,6 @@
 ﻿using BackgroundServiceExtensions;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Diagnostics;
 using Testing.Models;
@@ -14,7 +15,7 @@ public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem, str
 {
     private readonly string _connectionString;
 
-    public DemoQueueProcessor(string connectionString)
+    public DemoQueueProcessor(string connectionString, ILogger<DemoQueueProcessor> logger) : base(logger)
     {
         _connectionString = connectionString;
     }
