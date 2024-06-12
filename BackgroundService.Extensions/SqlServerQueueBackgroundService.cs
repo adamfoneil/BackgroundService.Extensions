@@ -54,6 +54,8 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
 	/// </summary>
 	public async Task DequeueAsync(CancellationToken stoppingToken)
 	{
+		if (stoppingToken.IsCancellationRequested) return;
+
 		using var cn = GetConnection();
 
 		var (message, success) = await cn.DequeueAsync<TMessage>(QueueTableName, "[Type]=@type", new { type = typeof(TData).Name });
