@@ -48,5 +48,5 @@ public class SampleQueueItem
 	public string FirstName { get; set; } = default!;
 	public string LastName { get; set; } = default!;
 
-	public override string ToString() => $"Id = {Id}, FirstName = {FirstName}, LastName = {LastName}";	
+	public override string ToString() => $"Id = {Id}, FirstName = {FirstName}, LastName = {LastName}";
 }

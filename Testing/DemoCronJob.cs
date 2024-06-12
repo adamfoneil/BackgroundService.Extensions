@@ -39,5 +39,5 @@ internal class DemoCronJob : SqlServerCronJobBackgroundService<DemoJobResult>
 	}
 
 	protected override IDbConnection GetConnection() => new SqlConnection(_connectionString);
-	
+
 }

@@ -25,7 +25,7 @@ public abstract class SqlServerCronJobBackgroundService<TResult> : BackgroundSer
 	public abstract string CrontabExpression { get; }
 
 	protected abstract IDbConnection GetConnection();
-	
+
 	protected abstract string TableName { get; }
 
 	protected virtual string SequenceName => "[dbo].[seq_CronJobExecution]";

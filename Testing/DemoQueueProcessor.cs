@@ -13,34 +13,34 @@ namespace Testing;
 /// </summary>
 public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem, string>
 {
-    private readonly string _connectionString;
+	private readonly string _connectionString;
 
-    public DemoQueueProcessor(string connectionString, ILogger<DemoQueueProcessor> logger) : base(logger)
-    {
-        _connectionString = connectionString;
-    }
+	public DemoQueueProcessor(string connectionString, ILogger<DemoQueueProcessor> logger) : base(logger)
+	{
+		_connectionString = connectionString;
+	}
 
-    protected override string QueueTableName => "[dbo].[Queue]";
+	protected override string QueueTableName => "[dbo].[Queue]";
 
-    protected override string ErrorTableName => "[dbo].[Error]";
+	protected override string ErrorTableName => "[dbo].[Error]";
 
-    /// <summary>
-    /// you likely would not have a property like this in a real app.
-    /// This is just for triggering internal error logging behavior
-    /// </summary>
-    public bool SimulateError { get; set; }
+	/// <summary>
+	/// you likely would not have a property like this in a real app.
+	/// This is just for triggering internal error logging behavior
+	/// </summary>
+	public bool SimulateError { get; set; }
 
-    protected override IDbConnection GetConnection() => new SqlConnection(_connectionString);
+	protected override IDbConnection GetConnection() => new SqlConnection(_connectionString);
 
-    protected override async Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, QueueItem message, string? data)
-    {
-        if (!SimulateError)
-        {
-            Debug.Print($"item Id {message.Id} received on {message.Queued}: {data}");
-            await Task.CompletedTask;
-            return;
-        }
+	protected override async Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, QueueItem message, string? data)
+	{
+		if (!SimulateError)
+		{
+			Debug.Print($"item Id {message.Id} received on {message.Queued}: {data}");
+			await Task.CompletedTask;
+			return;
+		}
 
-        throw new Exception("Just testing the error behavior");
-    }
+		throw new Exception("Just testing the error behavior");
+	}
 }
