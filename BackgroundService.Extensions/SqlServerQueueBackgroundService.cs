@@ -26,18 +26,20 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
 
 	protected abstract string ErrorTableName { get; }
 
-	protected abstract Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, TMessage message, TData? data);
+	protected abstract Task DoWorkAsync(DateTime started, TMessage message, TData? data, CancellationToken stoppingToken);
 
 	public async Task<long> EnqueueAsync(string userName, TData data)
 	{
 		ArgumentNullException.ThrowIfNull(userName, nameof(userName));
 		ArgumentNullException.ThrowIfNull(data, nameof(data));
 
-		var message = new TMessage();
-		message.UserName = userName;
-		message.Queued = DateTime.UtcNow;
-		message.Data = JsonSerializer.Serialize(data);
-		message.Type = typeof(TData).Name;
+		var message = new TMessage
+		{
+			UserName = userName,
+			Queued = DateTime.UtcNow,
+			Data = JsonSerializer.Serialize(data),
+			Type = typeof(TData).Name
+		};
 
 		using var cn = GetConnection();
 		return await cn.QuerySingleAsync<long>(
@@ -54,19 +56,19 @@ public abstract class SqlServerQueueBackgroundService<TMessage, TData> : Backgro
 	{
 		using var cn = GetConnection();
 
-		var result = await cn.DequeueAsync<TMessage>(QueueTableName, "[Type]=@type", new { type = typeof(TData).Name });
+		var (message, success) = await cn.DequeueAsync<TMessage>(QueueTableName, "[Type]=@type", new { type = typeof(TData).Name });
 
-		if (result.Success)
+		if (success)
 		{
-			var data = JsonSerializer.Deserialize<TData>(result.Message.Data);
+			var data = JsonSerializer.Deserialize<TData>(message.Data);
 			try
 			{
-				await DoWorkAsync(stoppingToken, DateTime.UtcNow, result.Message, data);
+				await DoWorkAsync(DateTime.UtcNow, message, data, stoppingToken);
 			}
 			catch (Exception exc)
 			{
 				Logger.LogError(exc, "Error in SqlServerQueueBackgroundService.DequeueAsync");
-				await LogErrorAsync(exc, result.Message, data);
+				await LogErrorAsync(exc, message, data);
 			}
 		}
 	}

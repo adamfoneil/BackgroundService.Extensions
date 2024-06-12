@@ -32,7 +32,7 @@ public class DemoQueueProcessor : SqlServerQueueBackgroundService<QueueItem, str
 
 	protected override IDbConnection GetConnection() => new SqlConnection(_connectionString);
 
-	protected override async Task DoWorkAsync(CancellationToken stoppingToken, DateTime started, QueueItem message, string? data)
+	protected override async Task DoWorkAsync(DateTime started, QueueItem message, string? data, CancellationToken stoppingToken)
 	{
 		if (!SimulateError)
 		{
